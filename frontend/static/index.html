@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+
+    <!-- leaflet files-->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.3.1/dist/leaflet.css" integrity="sha512-Rksm5RenBEKSKFjgI3a41vrjkw4EVPlJ3+OiI65vTjIdo9brlAacEuKOiQ5OFh7cOI1bkDwLqdLw3Zg0cRJAAQ==" crossorigin="" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.3.0/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.3.0/dist/MarkerCluster.Default.css" />
+
+    <script src="https://unpkg.com/leaflet@1.3.1/dist/leaflet.js" integrity="sha512-/Nsx9X4HebavoBvEBuyp3I7od5tA0UzAxs+j83KgC8PU0kgB4XiK4Lfe4y4cgBtaRJQEIFCW+oC506aPT2L1zw==" crossorigin=""></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.3.0/dist/leaflet.markercluster.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.heat/0.2.0/leaflet-heat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/heatmapjs@2.0.2/heatmap.js"></script>
+
+    <!-- jquery -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+
+    <!-- bootstrap -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+
+    <title> Earthquake Data Visualization </title>
+</head>
+
+<style>
+    * {
+      box-sizing: border-box;
+    }
+    
+    body {
+      font: 12px Arial;  
+    }
+    
+    /*the container must be positioned relative:*/
+    .autocomplete {
+      position: relative;
+      display: inline-block;
+    }
+    
+    input {
+      border: 1px solid transparent;
+      background-color: #f1f1f1;
+      padding: 10px;
+      font-size: 16px;
+    }
+    
+    input[type=text] {
+      background-color: #f1f1f1;
+      width: 100%;
+    }
+    
+    .autocomplete-items {
+      position: absolute;
+      border: 1px solid #d4d4d4;
+      border-bottom: none;
+      border-top: none;
+      z-index: 99;
+      /*position the autocomplete items to be the same width as the container:*/
+      top: 100%;
+      left: 0;
+      right: 0;
+    }
+    
+    .autocomplete-items div {
+      padding: 10px;
+      cursor: pointer;
+      background-color: #fff; 
+      border-bottom: 1px solid #d4d4d4; 
+    }
+    
+    /*when hovering an item:*/
+    .autocomplete-items div:hover {
+      background-color: #e9e9e9; 
+    }
+    
+    #autocomp {
+    position: absolute;
+    bottom: 72%;
+    margin: auto;
+    right: 10.7%;
+    width: 7.7vw;
+    border: 2px solid #878a85;
+    }
+
+    #button{
+    position: absolute;
+    bottom: 75.1%;
+    margin: auto;
+    right: 1%;
+    font-size: 0.92vw;
+    border: 2px solid #878a85;
+    background-color:  #42b7ee;
+    }
+
+    #button_remove {
+    position: absolute;
+    bottom: 72%;
+    margin: auto;
+    right: 3.76%;
+    font-size: 0.92vw;
+    border: 2px solid #878a85;
+    background-color:  #42b7ee;
+    }
+    
+    #heatmap {
+    position: absolute;
+    bottom: 80%;
+    margin: auto;
+    right: 3.76%;
+    font-size: 1.18vw;
+    background-color:  #42b7ee;
+    }
+
+    #h3 {
+    position: absolute;
+    bottom: 89%;
+    right: 3.2%;
+    margin: auto;
+    font-size:2.0vw;
+    background-color:  #a7a8a7;
+    }
+
+    #map {
+    position: absolute;
+    bottom: 1%;
+    margin: auto;
+    width: 81%;
+    height: 100%;
+    }
+  
+    input::placeholder {
+    color: rgb(121, 120, 120);
+    font-size: 9px;
+    }
+
+    </style>
+
+
+<body>
+    <h3 id="h3">Earthquake Data <br> Visualization</h3>
+    
+        <div id="autocomp" class="autocomplete" >
+          <input id="myInput" type="text" name="myCountry" placeholder="Type country name">
+        </div>
+        <button id="button" >Search earthquakes</button>
+        <button id="button_remove">Reset search</button>
+
+        <br> <br>
+        <button id="heatmap">Show worldwide heatmap</button>
+
+    <div id="map" ></div>
+
+<script>
+
+    //var countries = $.ajax({
+    //     url:"http://localhost:8000/backend/countries.json",
+    //      dataType: "json",
+    //      success: console.log("Countries data successfully loaded."),
+    //      error: function (xhr) {
+    //        alert(xhr.statusText)
+    //      }
+    //    })
+    
+    var map = L.map('map').setView([48, 12], 4);
+        
+    var osm = L.tileLayer(
+            "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+            {
+                attribution:
+                    "&copy; <a href='https://openstreetmap.org/copyright'> OpenStreetMap </a> contributors",
+            }
+        );
+
+        var baseLayers = {
+            osm: osm
+        };
+
+        osm.addTo(map);
+
+        
+
+
+        // a function to show a heatmap from earthquake points
+        $('#heatmap').click(function(){
+
+            var geoJsonUrl = "http://localhost:8000/backend/earthquakes.json"
+
+                var geojsonLayer = $.ajax({
+                url : geoJsonUrl,
+                dataType : 'json',
+                jsonpCallback: 'getJson',
+                success : console.log("Earthquakes data (for heatmap) successfully loaded!"),
+                });
+
+            geoJson2heat = function(geojson, intensity) {
+                return geojson.features.map(function(feature) {
+                    if (feature.geometry.coordinates !== null){
+                        return [parseFloat(feature.geometry.coordinates[1]), 
+                                parseFloat(feature.geometry.coordinates[0]), intensity];
+                    }
+                });
+                };
+                // 10 is intensity!
+            $.when(geojsonLayer).done(function() {
+                var punti_mappa = geoJson2heat(geojsonLayer.responseJSON, 20);
+                var heatMap = L.heatLayer(punti_mappa,{ radius: 20,blur: 24, maxZoom: 13});
+                map.addLayer(heatMap);
+                });
+        });
+
+
+
+        // function to autocomplete country name to be searched
+        function autocomplete(inp, arr) {
+        /*the autocomplete function takes two arguments,
+        the text field element and an array of possible autocompleted values:*/
+        var currentFocus;
+        /*execute a function when someone writes in the text field:*/
+        inp.addEventListener("input", function(e) {
+            var a, b, i, val = this.value;
+            /*close any already open lists of autocompleted values*/
+            closeAllLists();
+            if (!val) { return false;}
+            currentFocus = -1;
+            /*create a DIV element that will contain the items (values):*/
+            a = document.createElement("DIV");
+            a.setAttribute("id", this.id + "autocomplete-list");
+            a.setAttribute("class", "autocomplete-items");
+            /*append the DIV element as a child of the autocomplete container:*/
+            this.parentNode.appendChild(a);
+            /*for each item in the array...*/
+            for (i = 0; i < arr.length; i++) {
+                /*check if the item starts with the same letters as the text field value:*/
+                if (arr[i].substr(0, val.length).toUpperCase() == val.toUpperCase()) {
+                /*create a DIV element for each matching element:*/
+                b = document.createElement("DIV");
+                /*make the matching letters bold:*/
+                b.innerHTML = "<strong>" + arr[i].substr(0, val.length) + "</strong>";
+                b.innerHTML += arr[i].substr(val.length);
+                /*insert a input field that will hold the current array item's value:*/
+                b.innerHTML += "<input type='hidden' value='" + arr[i] + "'>";
+                /*execute a function when someone clicks on the item value (DIV element):*/
+                b.addEventListener("click", function(e) {
+                    /*insert the value for the autocomplete text field:*/
+                    inp.value = this.getElementsByTagName("input")[0].value;
+                    /*close the list of autocompleted values,
+                    (or any other open lists of autocompleted values:*/
+                    closeAllLists();
+                });
+                a.appendChild(b);
+                }
+            }
+        });
+        /*execute a function presses a key on the keyboard:*/
+        inp.addEventListener("keydown", function(e) {
+            var x = document.getElementById(this.id + "autocomplete-list");
+            if (x) x = x.getElementsByTagName("div");
+            if (e.keyCode == 40) {
+                /*If the arrow DOWN key is pressed,
+                increase the currentFocus variable:*/
+                currentFocus++;
+                /*and and make the current item more visible:*/
+                addActive(x);
+            } else if (e.keyCode == 38) { //up
+                /*If the arrow UP key is pressed,
+                decrease the currentFocus variable:*/
+                currentFocus--;
+                /*and and make the current item more visible:*/
+                addActive(x);
+            } else if (e.keyCode == 13) {
+                /*If the ENTER key is pressed, prevent the form from being submitted,*/
+                e.preventDefault();
+                if (currentFocus > -1) {
+                /*and simulate a click on the "active" item:*/
+                if (x) x[currentFocus].click();
+                }
+            }
+        });
+        function addActive(x) {
+            /*a function to classify an item as "active":*/
+            if (!x) return false;
+            /*start by removing the "active" class on all items:*/
+            removeActive(x);
+            if (currentFocus >= x.length) currentFocus = 0;
+            if (currentFocus < 0) currentFocus = (x.length - 1);
+            /*add class "autocomplete-active":*/
+            x[currentFocus].classList.add("autocomplete-active");
+        }
+        function removeActive(x) {
+            /*a function to remove the "active" class from all autocomplete items:*/
+            for (var i = 0; i < x.length; i++) {
+            x[i].classList.remove("autocomplete-active");
+            }
+        }
+        function closeAllLists(elmnt) {
+            /*close all autocomplete lists in the document,
+            except the one passed as an argument:*/
+            var x = document.getElementsByClassName("autocomplete-items");
+            for (var i = 0; i < x.length; i++) {
+            if (elmnt != x[i] && elmnt != inp) {
+                x[i].parentNode.removeChild(x[i]);
+            }
+            }
+        }
+        /*execute a function when someone clicks in the document:*/
+        document.addEventListener("click", function (e) {
+            closeAllLists(e.target);
+        });
+        }
+
+        /*An array containing all the country names in the world:*/
+        var countries = ["Afghanistan","Albania","Algeria","Andorra","Angola","Anguilla","Antigua & Barbuda","Argentina","Armenia","Aruba","Australia","Austria","Azerbaijan","Bahamas","Bahrain","Bangladesh","Barbados","Belarus","Belgium","Belize","Benin","Bermuda","Bhutan","Bolivia","Bosnia & Herzegovina","Botswana","Brazil","British Virgin Islands","Brunei","Bulgaria","Burkina Faso","Burundi","Cambodia","Cameroon","Canada","Cape Verde","Cayman Islands","Central Arfrican Republic","Chad","Chile","China","Colombia","Congo","Cook Islands","Costa Rica","Cote D Ivoire","Croatia","Cuba","Curacao","Cyprus","Czech Republic","Denmark","Djibouti","Dominica","Dominican Republic","Ecuador","Egypt","El Salvador","Equatorial Guinea","Eritrea","Estonia","Ethiopia","Falkland Islands","Faroe Islands","Fiji","Finland","France","French Polynesia","French West Indies","Gabon","Gambia","Georgia","Germany","Ghana","Gibraltar","Greece","Greenland","Grenada","Guam","Guatemala","Guernsey","Guinea","Guinea Bissau","Guyana","Haiti","Honduras","Hong Kong","Hungary","Iceland","India","Indonesia","Iran","Iraq","Ireland","Isle of Man","Israel","Italy","Jamaica","Japan","Jersey","Jordan","Kazakhstan","Kenya","Kiribati","Kosovo","Kuwait","Kyrgyzstan","Laos","Latvia","Lebanon","Lesotho","Liberia","Libya","Liechtenstein","Lithuania","Luxembourg","Macau","Macedonia","Madagascar","Malawi","Malaysia","Maldives","Mali","Malta","Marshall Islands","Mauritania","Mauritius","Mexico","Micronesia","Moldova","Monaco","Mongolia","Montenegro","Montserrat","Morocco","Mozambique","Myanmar","Namibia","Nauro","Nepal","Netherlands","Netherlands Antilles","New Caledonia","New Zealand","Nicaragua","Niger","Nigeria","North Korea","Norway","Oman","Pakistan","Palau","Palestine","Panama","Papua New Guinea","Paraguay","Peru","Philippines","Poland","Portugal","Puerto Rico","Qatar","Reunion","Romania","Russia","Rwanda","Saint Pierre & Miquelon","Samoa","San Marino","Sao Tome and Principe","Saudi Arabia","Senegal","Serbia","Seychelles","Sierra Leone","Singapore","Slovakia","Slovenia","Solomon Islands","Somalia","South Africa","South Korea","South Sudan","Spain","Sri Lanka","St Kitts & Nevis","St Lucia","St Vincent","Sudan","Suriname","Swaziland","Sweden","Switzerland","Syria","Taiwan","Tajikistan","Tanzania","Thailand","Timor L'Este","Togo","Tonga","Trinidad & Tobago","Tunisia","Turkey","Turkmenistan","Turks & Caicos","Tuvalu","Uganda","Ukraine","United Arab Emirates","United Kingdom","United States of America","Uruguay","Uzbekistan","Vanuatu","Vatican City","Venezuela","Vietnam","Virgin Islands (US)","Yemen","Zambia","Zimbabwe"];
+
+        /*initiate the autocomplete function on the "myInput" element, and pass along the countries array as possible autocomplete values:*/
+        autocomplete(document.getElementById("myInput"), countries);
+
+        // a main function for above created button: input is country name
+        $('#button').click(function(){
+                    var countryName = $('#myInput').val();
+                    var earthquakes = $.ajax({
+                    url:"http://localhost:8000/backend/earthquakes.json/?country=" + countryName,
+                    dataType : 'json',
+                    jsonpCallback: 'getJson',
+                    success: console.log("Earthquakes data successfully loaded!"),
+                    error: function (xhr) {
+                        alert(xhr.statusText)
+                    }
+                    });
+
+                    // function to retrieve data from above url (earthquakes) AND cluster those points (markers)
+                    $.when(earthquakes).done(function() {
+                        
+                        var kyEarthquakes = L.geoJson(earthquakes.responseJSON,{
+                        pointToLayer: function(feature,latlng){
+                            var marker = L.marker(latlng);
+                            marker.bindPopup('date: ' + feature.properties.date + '<br/>' + 'magnitude: ' + feature.properties.magnitude);
+                            return marker;
+                        }
+                        });
+
+                        var clusters = L.markerClusterGroup({
+                            maxClusterRadius: function(zoom) { return 50; }
+                        });
+                        clusters.addLayer(kyEarthquakes);
+                        map.addLayer(clusters);
+
+                        // button to remove all shown markers (reset)
+                        $('#button_remove').click(function(){
+                            map.removeLayer(clusters);
+                        });  
+                    })
+                    //var kyCountries = L.geoJSON(countries.responseJSON).addTo(map);
+                });
+
+</script>
+
+</body>
+</html>
