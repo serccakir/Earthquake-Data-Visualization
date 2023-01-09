@@ -7,7 +7,7 @@ The features will include:
 2. Show earthquake data filtered by a desired country
 
 Architecture:
-- Backend: Django + GeoDjango + PostgreSQL
+- Backend: Django + GeoDjango + PostgreSQL with PostGIS extension
 - Frontend: Either a JavaScript framework or Django with a web template
 
 ![Web app architecture](diagram.png)
