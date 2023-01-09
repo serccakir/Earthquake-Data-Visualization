@@ -1,0 +1,5 @@
+Django
+djangorestframework
+djangorestframework-gis
+django-filter
+psycopg2
