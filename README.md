@@ -12,7 +12,7 @@ Architecture:
 
 ![Web app architecture](diagram.png)
 
-###How to run the app?
+### How to run the app?
 
 Requirements to run this app:
    - Change directory to project home path
