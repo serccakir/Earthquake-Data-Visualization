@@ -2,7 +2,7 @@
 
 This web app aims at visualizing earthquake point data provided in geojson format.
 
-The features will include:
+The features include:
 1. Show a worldwide heatmap
 2. Show earthquake data filtered by a desired country
 
