@@ -21,3 +21,6 @@ Requirements to run this app:
    - Run the following command on terminal: **pip install requirements.txt**
    - Finally, run the following to serve the app: **python manage.py runserver**
    - Visit **http://localhost:8000/static/index.html**
+
+### How does it look like?
+![appUI](app1.PNG)
